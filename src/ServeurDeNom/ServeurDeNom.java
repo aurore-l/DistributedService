@@ -1,22 +1,23 @@
 package ServeurDeNom;
 
+import Shared.RepartiteurIdentite;
 import Shared.ServeurDeNomInterface;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import static java.rmi.server.RemoteServer.getClientHost;
 
 public class ServeurDeNom implements ServeurDeNomInterface {
 
     private MultiValuedMap<String, String> serveurDeCalculMap = null;
+    private RepartiteurIdentite repartiteurIdentite = null;
 
 
     public static void main(String[] args) {
@@ -40,7 +41,9 @@ public class ServeurDeNom implements ServeurDeNomInterface {
             ServeurDeNomInterface stub = (ServeurDeNomInterface) UnicastRemoteObject
                     .exportObject(this, 0);
 
-            Registry registry = LocateRegistry.getRegistry();
+            //Registry registry = LocateRegistry.getRegistry();
+            //registry.rebind("serveurDeNom", stub);
+            Registry registry = LocateRegistry.createRegistry(1099);
             registry.rebind("serveurDeNom", stub);
             System.out.println("Server ready.");
         } catch (ConnectException e) {
@@ -57,6 +60,26 @@ public class ServeurDeNom implements ServeurDeNomInterface {
     public boolean initiationServeurDeCalcul(String hostname, String name) throws RemoteException {
         serveurDeCalculMap.put(hostname, name);
         return true;
+    }
+
+    @Override
+    public boolean connecterRepartiteur(String identifiant, String motDePasse) throws RemoteException {
+        if (repartiteurIdentite == null) {
+            if (identifiant != null && motDePasse != null) {
+                try {
+                    repartiteurIdentite = new RepartiteurIdentite(getClientHost(), identifiant, motDePasse);
+                    return true;
+                } catch (ServerNotActiveException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean verifierRepartiteur(RepartiteurIdentite repartiteurIdentite) throws RemoteException {
+        return this.repartiteurIdentite != null && this.repartiteurIdentite.compareTo(repartiteurIdentite) == 0;
     }
 
     @Override

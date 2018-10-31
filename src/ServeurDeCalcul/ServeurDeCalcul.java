@@ -1,9 +1,11 @@
 package ServeurDeCalcul;
 
-import Shared.RepartiteurInterface;
-import Shared.ServeurDeCalculInterface;
-import Shared.ServeurDeNomInterface;
+import Shared.*;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
+
+import java.awt.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.ConnectException;
@@ -11,14 +13,18 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static java.rmi.server.RemoteServer.getClientHost;
 
 public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
     private ServeurDeNomInterface serveurDeNomInterface = null;
     private long taille = 0;
     private int maliciousness = 0;
+    private RepartiteurIdentite repartiteurIdentite = null;
 
     public static void main(String[] args){
        ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[1], args[2]); //args[1] = taille des tâches, args[2] = taux de réponse erronée
@@ -41,12 +47,12 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
         }
 
         try {
-            ServeurDeNomInterface stub = (ServeurDeNomInterface) UnicastRemoteObject
+            ServeurDeCalculInterface stub = (ServeurDeCalculInterface) UnicastRemoteObject
                     .exportObject(this, 0);
 
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(name, stub);
-            System.out.println("FileServer ready.");
+            System.out.println("ServerDeCalcul ready.");
 
 
             try {
@@ -107,4 +113,58 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
     }
 
 
+
+
+    private void calculer(Tache tache) {
+        for (Calcul calcul : tache.tache) {
+            if (calcul.getOperation() == Op.PELL ) {
+                calcul.setResult(Operations.pell(calcul.getOperande()));
+            } else if (calcul.getOperation() == Op.PRIME) {
+                calcul.setResult(Operations.prime(calcul.getOperande()));
+            }
+            System.out.println(calcul);
+        }
+    }
+
+    @Override
+    public Pair<Boolean, Tache> recevoirTache(Tache tache) throws RemoteException {
+        if (repartiteurConnecte()) {
+            boolean accepteTache = acceptRequestedTask(tache.tache.size());
+            if (!accepteTache) {
+                return new MutablePair<>(false, tache);
+            } else {
+                calculer(tache);
+                return new MutablePair<>(true, tache);
+            }
+        } return new MutablePair<>(false, tache);
+    }
+
+    @Override
+    public boolean ouvrirSession(String identifiant, String motDePasse) throws RemoteException {
+        if (!repartiteurConnecte()) {
+            if (identifiant != null && motDePasse != null) {
+                try {
+                    boolean resultat = serveurDeNomInterface.verifierRepartiteur(new RepartiteurIdentite(getClientHost(), identifiant, motDePasse));
+                    if (resultat) {
+                        repartiteurIdentite = new RepartiteurIdentite(getClientHost(), identifiant, motDePasse);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } catch (ServerNotActiveException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean repartiteurConnecte() {
+        try {
+            return repartiteurIdentite != null && repartiteurIdentite.getIp().equals(getClientHost());
+        } catch (ServerNotActiveException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
