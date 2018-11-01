@@ -21,6 +21,7 @@ public class Repartiteur implements RepartiteurInterface {
     private List<ServeurDeCalculInterface> serveurDeCalculInterfaceList = null;
     private String fichier;
     private List<Calcul> listeDeCalcul;
+    private List<Calcul> listeResultatCalcul;
 
 
     public static void main(String[] args) {
