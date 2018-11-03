@@ -25,6 +25,8 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
     private long taille = 0;
     private int maliciousness = 0;
     private RepartiteurIdentite repartiteurIdentite = null;
+    private int nombreCalculRecu = 0;
+    private String nomDuServeur;
 
     public static void main(String[] args){
        ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[1], args[2]); //args[1] = taille des tâches, args[2] = taux de réponse erronée
@@ -52,6 +54,7 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(name, stub);
+            nomDuServeur = name;
             System.out.println("ServerDeCalcul ready.");
 
 
@@ -95,14 +98,19 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
     }
 
     private boolean acceptRequestedTask(long numberOfTasks) {
+        if (numberOfTasks <= taille) {
+            return true;
+        }
         long taux = ((numberOfTasks - taille)*100)/(4 * taille);
+        System.out.println("Taux = " + taux);
         if (taux>=100) {
             return false;
         } else if (taux==0){
             return true;
         } else {
             int randomNum = ThreadLocalRandom.current().nextInt(0, 101);
-            return randomNum > taille;
+            System.out.println("randomNum = " + randomNum);
+            return randomNum > taux;
         }
     }
 
@@ -122,21 +130,22 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
             } else if (calcul.getOperation() == Op.PRIME) {
                 calcul.setResult(Operations.prime(calcul.getOperande()));
             }
-            System.out.println(calcul);
+            //System.out.println(calcul);
+            nombreCalculRecu++;
         }
     }
 
     @Override
-    public Pair<Boolean, Tache> recevoirTache(Tache tache) throws RemoteException {
+    public Pair<Integer, Tache> recevoirTache(Tache tache) throws RemoteException {
         if (repartiteurConnecte()) {
             boolean accepteTache = acceptRequestedTask(tache.tache.size());
             if (!accepteTache) {
-                return new MutablePair<>(false, tache);
+                return new MutablePair<>(2, tache); //tache non acceptée
             } else {
                 calculer(tache);
-                return new MutablePair<>(true, tache);
+                return new MutablePair<>(0, tache);
             }
-        } return new MutablePair<>(false, tache);
+        } return new MutablePair<>(1, tache); //repartiteur non connu
     }
 
     @Override
@@ -166,5 +175,17 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public String getNombreCalculRecu() {
+        repartiteurIdentite = null; //TODO clean
+        int inte = nombreCalculRecu;
+        nombreCalculRecu = 0;
+        return nomDuServeur+"  " + inte;
+    }
+
+    @Override
+    public int recupererCapacite() throws RemoteException {
+        return (int)taille;
     }
 }

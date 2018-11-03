@@ -73,6 +73,14 @@ public class ServeurDeNom implements ServeurDeNomInterface {
                     e.printStackTrace();
                 }
             }
+        } else {
+            try {
+                if (repartiteurIdentite.getIp().equals(getClientHost())) {
+                    return true;
+                }
+            } catch (ServerNotActiveException e) {
+                e.printStackTrace();
+            }
         }
         return false;
     }

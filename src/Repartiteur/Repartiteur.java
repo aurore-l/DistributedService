@@ -2,7 +2,6 @@ package Repartiteur;
 
 import Shared.*;
 import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.rmi.ConnectException;
@@ -10,18 +9,20 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.*;
 
 public class Repartiteur implements RepartiteurInterface {
 
     private ServeurDeNomInterface serveurDeNomInterface = null;
-    private List<ServeurDeCalculInterface> serveurDeCalculInterfaceList = null;
+    private LinkedBlockingQueue<ServerDeCalculAugmente> serveurDeCalculInterfaceQueue = null;
     private String fichier;
-    private List<Calcul> listeDeCalcul;
+    private LinkedBlockingQueue<Calcul> listeDeCalcul;
     private List<Calcul> listeResultatCalcul;
+    private final int NUMBER_OF_CALCUL_IN_TACHE = 5;
 
 
     public static void main(String[] args) {
@@ -32,6 +33,7 @@ public class Repartiteur implements RepartiteurInterface {
 
     private Repartiteur(String fichier) {
         super();
+        listeResultatCalcul = new ArrayList<>();
         serveurDeNomInterface = loadServeurDeNomStub("127.0.0.1");
         try {
             if (!serveurDeNomInterface.connecterRepartiteur("test","test")) {
@@ -42,7 +44,7 @@ public class Repartiteur implements RepartiteurInterface {
             e.printStackTrace();
         }
 
-        serveurDeCalculInterfaceList = loadAllServeursDeCalculStub();
+        serveurDeCalculInterfaceQueue = loadAllServeursDeCalculStub();
 
         this.fichier = fichier;
 
@@ -65,20 +67,24 @@ public class Repartiteur implements RepartiteurInterface {
         return stub;
     }
 
-    private List<ServeurDeCalculInterface> loadAllServeursDeCalculStub() {
-        List<ServeurDeCalculInterface> list = new ArrayList<>();
+    private LinkedBlockingQueue<ServerDeCalculAugmente> loadAllServeursDeCalculStub() {
+        LinkedBlockingQueue<ServerDeCalculAugmente> queue = new LinkedBlockingQueue<>();
         try {
             MultiValuedMap<String, String> serveurDeCalculInfosMap = serveurDeNomInterface.getServeurDeCalculMap();
             for (Map.Entry<String, String> entry : serveurDeCalculInfosMap.entries() ) {
                 ServeurDeCalculInterface serveurDeCalcul = loadServeurDeCalculStub(entry.getKey(), entry.getValue());
-                if (serveurDeCalcul.ouvrirSession("test","test")) {
-                    list.add(serveurDeCalcul);
+                try {
+                    if (serveurDeCalcul.ouvrirSession("test", "test")) {
+                        queue.add(new ServerDeCalculAugmente(serveurDeCalcul, entry.getKey(), entry.getValue(), serveurDeCalcul.recupererCapacite()));
+                    }
+                } catch (ConnectException e) {
+
                 }
             }
-            return list;
+            return queue;
         } catch (RemoteException e) {
             e.printStackTrace();
-            return null;
+            return queue;
         }
 
     }
@@ -101,25 +107,114 @@ public class Repartiteur implements RepartiteurInterface {
 
 
     private void run() {
+        if (serveurDeCalculInterfaceQueue.isEmpty()) {
+            System.err.println("Pas de serveurs disponibles pour le calcul");
+            System.exit(-2);
+        }
         lirefichier();
-        Tache tache = new Tache();
-        tache.tache = listeDeCalcul;
-        Pair<Boolean, Tache> retour = null;
-        for (ServeurDeCalculInterface serverDeCalculInterface : serveurDeCalculInterfaceList) {
+        int compteurDeCallable = 0;
+        ExecutorService CallablePool = Executors.newFixedThreadPool(serveurDeCalculInterfaceQueue.size());
+        CompletionService<Retour> service = new ExecutorCompletionService<Retour>(CallablePool);
+        long startProcessingTime = System.currentTimeMillis();
+        while (!serveurDeCalculInterfaceQueue.isEmpty() && !listeDeCalcul.isEmpty()) {
+            ServerDeCalculAugmente serveurDeCalculCourant = serveurDeCalculInterfaceQueue.poll(); //TODO get capacite
+            Tache tacheCourante = new Tache();
+            for (int i = 0; i<NUMBER_OF_CALCUL_IN_TACHE && !listeDeCalcul.isEmpty(); i++) {
+                tacheCourante.tache.add(listeDeCalcul.poll());
+            }
+            service.submit(new TacheCallable(serveurDeCalculCourant,tacheCourante));
+            compteurDeCallable++;
+        }
+
+        while (compteurDeCallable > 0) {
             try {
-                retour = serverDeCalculInterface.recevoirTache(tache);
+                Future<Retour> future = service.take();
+                try {
+                    Retour retour = future.get();
+                    if (retour.getCodeRetour() == 0) {
+                        System.out.println(retour.getServeurDeCalcul().getIp() + "   "+  retour.getServeurDeCalcul().getNom()+ "    Retour ok du serveur                           "+(System.currentTimeMillis()-startProcessingTime));
+                        listeResultatCalcul.addAll(retour.getTache().tache);
+                        compteurDeCallable--;
+                        serveurDeCalculInterfaceQueue.add(retour.getServeurDeCalcul());
+                    } else if (retour.getCodeRetour() == 1) {
+                        System.out.println(retour.getServeurDeCalcul().getIp() + "   "+  retour.getServeurDeCalcul().getNom()+ "    Serveur ne connait pas le répartiteur          "+(System.currentTimeMillis()-startProcessingTime));
+                        listeDeCalcul.addAll(retour.getTache().tache);
+                        compteurDeCallable--;
+                    } else if (retour.getCodeRetour() == 2 ) {
+                        System.out.println(retour.getServeurDeCalcul().getIp() + "   "+  retour.getServeurDeCalcul().getNom()+ "    Tache non acceptée                             "+(System.currentTimeMillis()-startProcessingTime));
+                        listeDeCalcul.addAll(retour.getTache().tache);
+                        compteurDeCallable--;
+                        serveurDeCalculInterfaceQueue.add(retour.getServeurDeCalcul());
+                    } else if (retour.getCodeRetour() == 3) {
+                        System.out.println(retour.getServeurDeCalcul().getIp() + "   "+  retour.getServeurDeCalcul().getNom()+ "    Remote Exception                               "+(System.currentTimeMillis()-startProcessingTime));
+                        listeDeCalcul.addAll(retour.getTache().tache);
+                        compteurDeCallable--;
+                    }
+
+                    if (!serveurDeCalculInterfaceQueue.isEmpty() && !listeDeCalcul.isEmpty()) {
+                        ServerDeCalculAugmente serveurDeCalculCourant = serveurDeCalculInterfaceQueue.poll(); //TODO get capacite
+                        Tache tacheCourante = new Tache();
+                        for (int i = 0; i<NUMBER_OF_CALCUL_IN_TACHE && !listeDeCalcul.isEmpty(); i++) {
+                            tacheCourante.tache.add(listeDeCalcul.poll());
+                        }
+                        service.submit(new TacheCallable(serveurDeCalculCourant,tacheCourante));
+                        compteurDeCallable++;
+                    }
+
+                    if (compteurDeCallable == 0 && !listeDeCalcul.isEmpty()) {
+                        System.err.println("Plus de serveurs disponibles pour finir le calcul");
+                        System.exit(-2);
+                    }
+
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        System.out.println("Time = " + (System.currentTimeMillis() - startProcessingTime));
+
+        int resultat = calculerResultat();
+         System.out.println("Le résultat du calcul est : " + resultat);
+
+        for (ServerDeCalculAugmente server: serveurDeCalculInterfaceQueue) {
+            try {
+                System.out.println(server.getServeurDeCalculInterface().getNombreCalculRecu());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
+
         }
-        int resultat = calculerResultat(retour.getRight());
-        System.out.println("Le résultat du calcul est : " + resultat);
+
+
+
+
+
+
+
+
+//        Tache tache = new Tache();
+//        tache.tache = listeDeCalcul;
+//        Pair<Boolean, Tache> retour = null;
+//        for (ServeurDeCalculInterface serverDeCalculInterface : serveurDeCalculInterfaceQueue) {
+//            try {
+//                retour = serverDeCalculInterface.recevoirTache(tache);
+//            } catch (RemoteException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        int resultat = calculerResultat(retour.getRight());
+//        System.out.println("Le résultat du calcul est : " + resultat);
 
     }
 
 
     private void lirefichier() {
-        listeDeCalcul = new ArrayList<>();
+        listeDeCalcul = new LinkedBlockingQueue<>();
         try {
             FileReader fileReader = new FileReader(fichier);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -142,10 +237,10 @@ public class Repartiteur implements RepartiteurInterface {
 
     }
 
-    private int calculerResultat(Tache tache) {
+    private int calculerResultat() {
         int somme = 0;
-        for (Calcul calcul : tache.tache) {
-            System.out.println(calcul);
+        for (Calcul calcul : listeResultatCalcul) {
+            //System.out.println(calcul);
             somme += calcul.getResult();
             somme %= 4000;
         }

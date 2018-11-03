@@ -8,6 +8,9 @@ import java.util.List;
 
 public interface ServeurDeCalculInterface extends Remote {
 
-    Pair<Boolean,Tache> recevoirTache(Tache tache) throws RemoteException;
+    Pair<Integer,Tache> recevoirTache(Tache tache) throws RemoteException;
     boolean ouvrirSession(String identifiant, String motDePasse)  throws RemoteException;
+    String getNombreCalculRecu() throws RemoteException;
+    int recupererCapacite() throws  RemoteException;
+
 }
