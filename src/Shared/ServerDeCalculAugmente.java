@@ -1,12 +1,13 @@
-package Repartiteur;
+package Shared;
 
-import Shared.ServeurDeCalculInterface;
 
-public class ServerDeCalculAugmente {
+import java.io.Serializable;
 
-    private ServeurDeCalculInterface serveurDeCalculInterface = null;
-    private String ip = null;
-    private String nom = null;
+public class ServerDeCalculAugmente implements Comparable<ServerDeCalculAugmente>, Serializable {
+
+    private ServeurDeCalculInterface serveurDeCalculInterface;
+    private String ip;
+    private String nom;
     private int capaciteDeCalcul = 0;
 
     public ServerDeCalculAugmente(ServeurDeCalculInterface serveurDeCalculInterface, String ip, String nom, int capaciteDeCalcul) {
@@ -40,6 +41,17 @@ public class ServerDeCalculAugmente {
                 ", nom='" + nom + '\'' +
                 ", capaciteDeCalcul=" + capaciteDeCalcul +
                 '}';
+    }
+
+    @Override
+    public int compareTo(ServerDeCalculAugmente server) {
+        if (server == null) return 1;
+        if (ip.equals(server.ip) && nom.equals(server.nom)) {
+            return 0;
+        }
+        else {
+            return 1;
+        }
     }
 }
 

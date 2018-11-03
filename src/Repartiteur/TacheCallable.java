@@ -1,6 +1,7 @@
 package Repartiteur;
 
 import Shared.Tache;
+import Shared.ServerDeCalculAugmente;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.rmi.RemoteException;

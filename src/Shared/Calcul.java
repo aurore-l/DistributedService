@@ -30,6 +30,8 @@ public class Calcul implements Serializable {
         return operation;
     }
 
+
+
     @Override
     public String toString() {
         return "Calcul{" +

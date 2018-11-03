@@ -1,7 +1,7 @@
 package Repartiteur;
 
-import Shared.ServeurDeCalculInterface;
 import Shared.Tache;
+import Shared.ServerDeCalculAugmente;
 
 public class Retour {
 

@@ -102,21 +102,21 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
             return true;
         }
         long taux = ((numberOfTasks - taille)*100)/(4 * taille);
-        System.out.println("Taux = " + taux);
+        //System.out.println("Taux = " + taux);
         if (taux>=100) {
             return false;
         } else if (taux==0){
             return true;
         } else {
             int randomNum = ThreadLocalRandom.current().nextInt(0, 101);
-            System.out.println("randomNum = " + randomNum);
+            //System.out.println("randomNum = " + randomNum);
             return randomNum > taux;
         }
     }
 
     private boolean willBeMalicious() {
         int randomNum = ThreadLocalRandom.current().nextInt(0, 101);
-        return randomNum <= maliciousness;
+        return randomNum < maliciousness;
 
     }
 
@@ -125,10 +125,14 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
     private void calculer(Tache tache) {
         for (Calcul calcul : tache.tache) {
-            if (calcul.getOperation() == Op.PELL ) {
-                calcul.setResult(Operations.pell(calcul.getOperande()));
-            } else if (calcul.getOperation() == Op.PRIME) {
-                calcul.setResult(Operations.prime(calcul.getOperande()));
+            if (willBeMalicious()) {
+                calcul.setResult( ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE-4000));
+            } else {
+                if (calcul.getOperation() == Op.PELL) {
+                    calcul.setResult(Operations.pell(calcul.getOperande()));
+                } else if (calcul.getOperation() == Op.PRIME) {
+                    calcul.setResult(Operations.prime(calcul.getOperande()));
+                }
             }
             //System.out.println(calcul);
             nombreCalculRecu++;
