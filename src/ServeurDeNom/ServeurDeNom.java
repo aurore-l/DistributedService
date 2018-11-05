@@ -22,7 +22,7 @@ public class ServeurDeNom implements ServeurDeNomInterface {
 
     public static void main(String[] args) {
         ServeurDeNom serveurDeNom = new ServeurDeNom();
-        serveurDeNom.run();
+        serveurDeNom.run(args[0]);
     }
 
 
@@ -32,18 +32,16 @@ public class ServeurDeNom implements ServeurDeNomInterface {
 
     }
 
-    private void run() {
+    private void run(String port) {
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
 
         try {
             ServeurDeNomInterface stub = (ServeurDeNomInterface) UnicastRemoteObject
-                    .exportObject(this, 0);
+                    .exportObject(this, Integer.parseInt(port));
 
-            //Registry registry = LocateRegistry.getRegistry();
-            //registry.rebind("serveurDeNom", stub);
-            Registry registry = LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(Integer.parseInt(port));
             registry.rebind("serveurDeNom", stub);
             System.out.println("Server ready.");
         } catch (ConnectException e) {

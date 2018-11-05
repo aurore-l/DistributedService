@@ -1,5 +1,7 @@
-package Shared;
+package Repartiteur;
 
+
+import Shared.ServeurDeCalculInterface;
 
 import java.io.Serializable;
 

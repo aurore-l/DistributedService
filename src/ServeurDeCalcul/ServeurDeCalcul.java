@@ -29,30 +29,30 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
     private String nomDuServeur;
 
     public static void main(String[] args){
-       ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[1], args[2]); //args[1] = taille des tâches, args[2] = taux de réponse erronée
-       serveurDeCalcul.run(args[0]); //args[0] = nom dans rmiregistry
+       ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[2], args[3], args[4], args[5]); //args[4] = taille des tâches, args[5] = taux de réponse erronée
+       serveurDeCalcul.run(args[0], args[1]); //args[0] = nom dans rmiregistry
 
     }
 
-    private ServeurDeCalcul(String taille, String maliciousness) {
+    private ServeurDeCalcul(String ipServeurDeNom, String portServeurDeNom, String taille, String maliciousness) {
         super();
-        serveurDeNomInterface = loadServeurDeNomStub("127.0.0.1");
+        serveurDeNomInterface = loadServeurDeNomStub(ipServeurDeNom, portServeurDeNom);
         this.taille = Long.valueOf(taille);
         this.maliciousness = Integer.valueOf(maliciousness);
 
 
     }
 
-    private void run(String name) {
+    private void run(String name, String port) {
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
 
         try {
             ServeurDeCalculInterface stub = (ServeurDeCalculInterface) UnicastRemoteObject
-                    .exportObject(this, 0);
+                    .exportObject(this, Integer.parseInt(port));
 
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(Integer.parseInt(port));
             registry.rebind(name, stub);
             nomDuServeur = name;
             System.out.println("ServerDeCalcul ready.");
@@ -61,7 +61,7 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
             try {
                 InetAddress inetAddress = InetAddress.getLocalHost();
                 String ip = inetAddress.getHostAddress();
-                serveurDeNomInterface.initiationServeurDeCalcul(ip,name);
+                serveurDeNomInterface.initiationServeurDeCalcul(ip+":"+port,name);
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             } catch (RemoteException e) {
@@ -81,11 +81,11 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
 
 
-    private ServeurDeNomInterface loadServeurDeNomStub(String hostname) {
+    private ServeurDeNomInterface loadServeurDeNomStub(String hostname, String port) {
         ServeurDeNomInterface stub = null;
 
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname);
+            Registry registry = LocateRegistry.getRegistry(hostname, Integer.parseInt(port));
             stub = (ServeurDeNomInterface) registry.lookup("serveurDeNom");
         } catch (NotBoundException e) {
             System.out.println("Erreur: Le nom '" + e.getMessage()

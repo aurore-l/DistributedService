@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build-jar" name="TP2">
+	<property name="debuglevel" value="source,lines,vars" />
+	<path id="TP2.classpath">
+		<pathelement location="bin" />
+	</path>
+	<target name="init">
+		<mkdir dir="bin" />
+		<copy includeemptydirs="false" todir="bin">
+			<fileset dir="src">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+	<target name="clean">
+		<delete dir="bin" />
+		<delete file="serveurDeNom.jar" />
+		<delete file="repartiteur.jar" />
+		<delete file="serveurDeCalcul.jar" />
+		<delete file="shared.jar" />
+	</target>
+	<target depends="init" name="build-class">
+		<javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false">
+			<src path="src" />
+			<classpath>
+				<pathelement location="bin" />
+				<pathelement path="src/Shared/Util/commons-lang3-3.8.1.jar"/>
+				<pathelement path="src/Shared/Util/commons-collections4-4.2.jar"/>
+			</classpath>
+		</javac>
+
+		<unzip src="src/Shared/Util/commons-lang3-3.8.1.jar" dest="bin">
+			<patternset>
+				<exclude name="META-INF/*/**"/>
+			</patternset>
+		</unzip>
+		<unzip src="src/Shared/Util/commons-collections4-4.2.jar" dest="bin">
+			<patternset>
+				<exclude name="META-INF/*/**"/>
+			</patternset>
+		</unzip>
+	</target>
+	<target depends="build-class" name="build-jar">
+		<jar destfile="serveurDeNom.jar" basedir="bin" includes="ServeurDeNom/**" update="false" />
+		<jar destfile="repartiteur.jar" basedir="bin" includes="Repartiteur/**" update="false" />
+		<jar destfile="serveurDeCalcul.jar" basedir="bin" includes="ServeurDeCalcul/**" update="false" />
+		<jar destfile="shared.jar" basedir="bin" includes="Shared/**" update="false">
+			<zipgroupfileset dir="bin/Shared/Util" includes="*.jar"/>
+		</jar>
+	</target>
+</project>

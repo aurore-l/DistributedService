@@ -1,11 +1,8 @@
 package Repartiteur;
 
 import Shared.Calcul;
-import Shared.ServerDeCalculAugmente;
 import Shared.Tache;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.rmi.RemoteException;
 import java.util.concurrent.*;
 
 public class TacheCallableSecurise implements Callable<RetourSecurise> {

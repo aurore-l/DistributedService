@@ -1,7 +1,6 @@
 package Repartiteur;
 
 import Shared.*;
-import Shared.ServerDeCalculAugmente;
 import org.apache.commons.collections4.MultiValuedMap;
 
 import java.io.*;
@@ -25,15 +24,15 @@ public class Repartiteur implements RepartiteurInterface {
 
 
     public static void main(String[] args) {
-        Repartiteur repartiteur = new Repartiteur(args[0]);
+        Repartiteur repartiteur = new Repartiteur(args[0],args[1], args[2]);
         repartiteur.run();
     }
 
 
-    private Repartiteur(String fichier) {
+    private Repartiteur(String fichier, String ipServeurDeNom, String portServeurDeNom) {
         super();
         listeResultatCalcul = new ArrayList<>();
-        serveurDeNomInterface = loadServeurDeNomStub("127.0.0.1");
+        serveurDeNomInterface = loadServeurDeNomStub(ipServeurDeNom,portServeurDeNom);
         try {
             if (!serveurDeNomInterface.connecterRepartiteur("test","test")) {
                 System.err.println("Un répartiteur est déjà connecté au serveur de nom");
@@ -50,11 +49,11 @@ public class Repartiteur implements RepartiteurInterface {
     }
 
 
-    private ServeurDeNomInterface loadServeurDeNomStub(String hostname) {
+    private ServeurDeNomInterface loadServeurDeNomStub(String hostname, String port) {
         ServeurDeNomInterface stub = null;
 
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname);
+            Registry registry = LocateRegistry.getRegistry(hostname, Integer.parseInt(port));
             stub = (ServeurDeNomInterface) registry.lookup("serveurDeNom");
         } catch (NotBoundException e) {
             System.out.println("Erreur: Le nom '" + e.getMessage()
@@ -90,9 +89,11 @@ public class Repartiteur implements RepartiteurInterface {
 
     private ServeurDeCalculInterface loadServeurDeCalculStub(String hostname, String name) {
         ServeurDeCalculInterface stub = null;
+        String ip = hostname.split(":")[0];
+        String port = hostname.split(":")[1];
 
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname);
+            Registry registry = LocateRegistry.getRegistry(hostname, Integer.parseInt(port));
             stub = (ServeurDeCalculInterface) registry.lookup(name);
         } catch (NotBoundException e) {
             System.out.println("Erreur: Le nom '" + e.getMessage()
