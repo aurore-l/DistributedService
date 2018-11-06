@@ -4,10 +4,6 @@ import Shared.*;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-
-import java.awt.*;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -19,26 +15,36 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static java.rmi.server.RemoteServer.getClientHost;
 
+/**
+ * Classe représentat un serveur de calcul
+ */
 public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
-    private ServeurDeNomInterface serveurDeNomInterface = null;
-    private long taille = 0;
-    private int maliciousness = 0;
+    private ServeurDeNomInterface serveurDeNomInterface;
+    /**
+     * Capacité du serveur de calcul
+     */
+    private long capacite;
+    /**
+     * Taux de réponse incorrectes envoyées
+     */
+    private int tauxDeReponsesIncorrectes;
+    /**
+     * Informations sur le répartiteur associé
+     */
     private RepartiteurIdentite repartiteurIdentite = null;
-    private int nombreCalculRecu = 0;
-    private String nomDuServeur;
 
     public static void main(String[] args){
-       ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[2], args[3], args[4], args[5]); //args[4] = taille des tâches, args[5] = taux de réponse erronée
-       serveurDeCalcul.run(args[0], args[1]); //args[0] = nom dans rmiregistry
+       ServeurDeCalcul serveurDeCalcul = new ServeurDeCalcul(args[2], args[3], args[4], args[5]); //args[2] = ip serveur de nom, args[3] = port serveur de nom, args[4] = capacite, args[5] = taux de réponse erronée
+       serveurDeCalcul.run(args[0], args[1]); //args[0] = nom dans rmiregistry, args[1] = port d'écoute
 
     }
 
-    private ServeurDeCalcul(String ipServeurDeNom, String portServeurDeNom, String taille, String maliciousness) {
+    private ServeurDeCalcul(String ipServeurDeNom, String portServeurDeNom, String capacite, String tauxDeReponsesIncorrectes) {
         super();
         serveurDeNomInterface = loadServeurDeNomStub(ipServeurDeNom, portServeurDeNom);
-        this.taille = Long.valueOf(taille);
-        this.maliciousness = Integer.valueOf(maliciousness);
+        this.capacite = Long.valueOf(capacite);
+        this.tauxDeReponsesIncorrectes = Integer.valueOf(tauxDeReponsesIncorrectes);
 
 
     }
@@ -54,7 +60,6 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
             Registry registry = LocateRegistry.createRegistry(Integer.parseInt(port));
             registry.rebind(name, stub);
-            nomDuServeur = name;
             System.out.println("ServerDeCalcul ready.");
 
 
@@ -94,52 +99,65 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
         return stub;
     }
 
-    private boolean acceptRequestedTask(long numberOfTasks) {
-        if (numberOfTasks <= taille) {
+    /**
+     * Vérifie si la tache est acceptée en fonction de la capacité et du nombre de calcul recu
+     * @param nombreDeCalculs nombre de calculs reçus
+     * @return true si la tache est acceptée, false sinon
+     */
+    private boolean accepteTache(long nombreDeCalculs) {
+        if (nombreDeCalculs <= capacite) {
             return true;
         }
-        long taux = ((numberOfTasks - taille)*100)/(4 * taille);
-        //System.out.println("Taux = " + taux);
+        long taux = ((nombreDeCalculs - capacite)*100)/(4 * capacite);
         if (taux>=100) {
             return false;
         } else if (taux==0){
             return true;
         } else {
             int randomNum = ThreadLocalRandom.current().nextInt(0, 101);
-            //System.out.println("randomNum = " + randomNum);
             return randomNum > taux;
         }
     }
 
-    private boolean willBeMalicious() {
+    /**
+     * Indique si le serveur de calcul doit renvoyer une mauvaise reponse
+     * @return true si le serveur doit renvoyer une mauvaise réponse, false sinon
+     */
+    private boolean envoieMauvaiseReponse() {
         int randomNum = ThreadLocalRandom.current().nextInt(0, 101);
-        return randomNum < maliciousness;
+        return randomNum < tauxDeReponsesIncorrectes;
 
     }
 
 
-
-
+    /**
+     * Calcule les calculs d'une tache
+     * @param tache Tache contenant les calculs avec leur résultats
+     */
     private void calculer(Tache tache) {
         for (Calcul calcul : tache.tache) {
-            if (willBeMalicious()) {
-                calcul.setResult( ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE-4000));
+            if (envoieMauvaiseReponse()) {
+                calcul.setResultat( ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE-4000));
             } else {
                 if (calcul.getOperation() == Op.PELL) {
-                    calcul.setResult(Operations.pell(calcul.getOperande()));
+                    calcul.setResultat(Operations.pell(calcul.getOperande()));
                 } else if (calcul.getOperation() == Op.PRIME) {
-                    calcul.setResult(Operations.prime(calcul.getOperande()));
+                    calcul.setResultat(Operations.prime(calcul.getOperande()));
                 }
             }
-            //System.out.println(calcul);
-            nombreCalculRecu++;
         }
     }
 
+    /**
+     * Reçoit une tache du répartiteur
+     * @param tache Tache reçue à calculer
+     * @return Pair de code retour et de la tache complétée ou non
+     * @throws RemoteException
+     */
     @Override
     public Pair<Integer, Tache> recevoirTache(Tache tache) throws RemoteException {
         if (repartiteurConnecte()) {
-            boolean accepteTache = acceptRequestedTask(tache.tache.size());
+            boolean accepteTache = accepteTache(tache.tache.size());
             if (!accepteTache) {
                 return new MutablePair<>(2, tache); //tache non acceptée
             } else {
@@ -149,6 +167,13 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
         } return new MutablePair<>(1, tache); //repartiteur non connu
     }
 
+    /**
+     * Ouvre une session entre un répartiteur et le serveur de calcul
+     * @param identifiant Identifiant du répartiteur
+     * @param motDePasse Mot de passe du répartiteur
+     * @return true si la session est ouverte, false sinon
+     * @throws RemoteException
+     */
     @Override
     public boolean ouvrirSession(String identifiant, String motDePasse) throws RemoteException {
         if (!repartiteurConnecte()) {
@@ -169,6 +194,10 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
         return false;
     }
 
+    /**
+     * Vérifie si un répartiteur est connecté
+     * @return true si le répartiteur actuel est bien le répartieur connecté, false sinon
+     */
     private boolean repartiteurConnecte() {
         try {
             return repartiteurIdentite != null && repartiteurIdentite.getIp().equals(getClientHost());
@@ -178,15 +207,13 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
         return false;
     }
 
-    public String getNombreCalculRecu() {
-        repartiteurIdentite = null; //TODO clean
-        int inte = nombreCalculRecu;
-        nombreCalculRecu = 0;
-        return nomDuServeur+"  " + inte;
-    }
-
+    /**
+     * Renvoie la capacité du serveur de calcul
+     * @return capacité
+     * @throws RemoteException
+     */
     @Override
     public int recupererCapacite() throws RemoteException {
-        return (int)taille;
+        return (int) capacite;
     }
 }

@@ -2,7 +2,11 @@ package Shared;
 
 import java.io.Serializable;
 
+/**
+ * Classe permettant de stocker plusieurs informations à propos d'un répartiteur
+ */
 public class RepartiteurIdentite implements Comparable<RepartiteurIdentite>, Serializable {
+
 
     private String ip;
     private String identifiant;

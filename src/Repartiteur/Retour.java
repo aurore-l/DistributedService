@@ -2,27 +2,39 @@ package Repartiteur;
 
 import Shared.Tache;
 
-public class Retour {
+/**
+ * Classe représentant le retour d'un thread (Callable) en mode sécurisé
+ */
+class Retour {
 
-    private ServerDeCalculAugmente serveurDeCalcul = null;
-    private Tache tache = null;
+    /**
+     * Informations sur le serveur de calcul associé au thread
+     */
+    private ServerDeCalculAugmente serveurDeCalcul;
+    /**
+     * Tache associée au thread
+     */
+    private Tache tache;
+    /**
+     * Code retour du thread
+     */
     private int codeRetour;
 
-    public Retour(ServerDeCalculAugmente serveurDeCalcul, Tache tache, int codeRetour) {
+    Retour(ServerDeCalculAugmente serveurDeCalcul, Tache tache, int codeRetour) {
         this.serveurDeCalcul = serveurDeCalcul;
         this.tache = tache;
         this.codeRetour = codeRetour;
     }
 
-    public ServerDeCalculAugmente getServeurDeCalcul() {
+    ServerDeCalculAugmente getServeurDeCalcul() {
         return serveurDeCalcul;
     }
 
-    public Tache getTache() {
+    Tache getTache() {
         return tache;
     }
 
-    public int getCodeRetour() {
+    int getCodeRetour() {
         return codeRetour;
     }
 }

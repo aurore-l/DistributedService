@@ -5,33 +5,48 @@ import Shared.ServeurDeCalculInterface;
 
 import java.io.Serializable;
 
+/**
+ * Classe permettant de stocker plusieurs informations à propos d'un serveur de calcul
+ */
 public class ServerDeCalculAugmente implements Comparable<ServerDeCalculAugmente>, Serializable {
 
+    /**
+     * Stub du serveur de calcul
+     */
     private ServeurDeCalculInterface serveurDeCalculInterface;
+    /**
+     * Ip:port du serveur de calcul
+     */
     private String ip;
+    /**
+     * Nom du serveur de calcul dans son rmiregistry
+     */
     private String nom;
-    private int capaciteDeCalcul = 0;
+    /**
+     * Capacité du serveur de calcul
+     */
+    private int capaciteDeCalcul;
 
-    public ServerDeCalculAugmente(ServeurDeCalculInterface serveurDeCalculInterface, String ip, String nom, int capaciteDeCalcul) {
+    ServerDeCalculAugmente(ServeurDeCalculInterface serveurDeCalculInterface, String ip, String nom, int capaciteDeCalcul) {
         this.serveurDeCalculInterface = serveurDeCalculInterface;
         this.ip = ip;
         this.nom = nom;
         this.capaciteDeCalcul = capaciteDeCalcul;
     }
 
-    public ServeurDeCalculInterface getServeurDeCalculInterface() {
+    ServeurDeCalculInterface getServeurDeCalculInterface() {
         return serveurDeCalculInterface;
     }
 
-    public String getNom() {
+    String getNom() {
         return nom;
     }
 
-    public int getCapaciteDeCalcul() {
+    int getCapaciteDeCalcul() {
         return capaciteDeCalcul;
     }
 
-    public String getIp() {
+    String getIp() {
         return ip;
     }
 

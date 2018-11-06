@@ -14,9 +14,18 @@ import java.rmi.server.UnicastRemoteObject;
 
 import static java.rmi.server.RemoteServer.getClientHost;
 
+/**
+ * Classe représentant le serveur de nom
+ */
 public class ServeurDeNom implements ServeurDeNomInterface {
 
-    private MultiValuedMap<String, String> serveurDeCalculMap = null;
+    /**
+     * Map contenant les informations sur les serveurs de calculs connectée : ip:port et nom dans le rmiregistry
+     */
+    private MultiValuedMap<String, String> serveurDeCalculMap;
+    /**
+     * Informations sur le répartiteur connecté
+     */
     private RepartiteurIdentite repartiteurIdentite = null;
 
 
@@ -54,12 +63,26 @@ public class ServeurDeNom implements ServeurDeNomInterface {
         }
     }
 
+    /**
+     * Initiation de la connexion entre le serveur de nom et un serveur de calcul. Permettre d'enregristrer les informations sur le serveur de calcul
+     * @param hostname ip:port du serveur de calcul
+     * @param name nom dans le rmiregistry du serveur de calcul
+     * @return true
+     * @throws RemoteException
+     */
     @Override
     public boolean initiationServeurDeCalcul(String hostname, String name) throws RemoteException {
         serveurDeCalculMap.put(hostname, name);
         return true;
     }
 
+    /**
+     * Initiation de la connexion entre le serveur de nom et le répariteur
+     * @param identifiant Identifiant du répartiteur
+     * @param motDePasse Mot du passe du répartiteur
+     * @return true si aucun répartiteur n'était connecté avant et que l'identifiant et le mot de passe sont non null, false sinon
+     * @throws RemoteException
+     */
     @Override
     public boolean connecterRepartiteur(String identifiant, String motDePasse) throws RemoteException {
         if (repartiteurIdentite == null) {
@@ -71,23 +94,26 @@ public class ServeurDeNom implements ServeurDeNomInterface {
                     e.printStackTrace();
                 }
             }
-        } else {
-            try {
-                if (repartiteurIdentite.getIp().equals(getClientHost())) {
-                    return true;
-                }
-            } catch (ServerNotActiveException e) {
-                e.printStackTrace();
-            }
         }
         return false;
     }
 
+    /**
+     * Vérifie si le répartieur passé en paramètre correspond au répartiteur connecté
+     * @param repartiteurIdentite informations sur le répartieur à vérifier
+     * @return true si les répartiteurs sont les mêmes, false sinon
+     * @throws RemoteException
+     */
     @Override
     public boolean verifierRepartiteur(RepartiteurIdentite repartiteurIdentite) throws RemoteException {
         return this.repartiteurIdentite != null && this.repartiteurIdentite.compareTo(repartiteurIdentite) == 0;
     }
 
+    /**
+     * Renvoie les informations sur les serveur de calculs connectée
+     * @return Map contenant les informations : ip:port et nom dans le rmiregistry
+     * @throws RemoteException
+     */
     @Override
     public MultiValuedMap<String, String> getServeurDeCalculMap() throws RemoteException {
         return serveurDeCalculMap;

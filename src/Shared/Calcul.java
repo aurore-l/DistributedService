@@ -2,28 +2,31 @@ package Shared;
 
 import java.io.Serializable;
 
+/**
+ * Classe représentant un calcul
+ */
 public class Calcul implements Serializable {
 
     private Op operation;
     private int operande;
-    private Integer result;
+    private Integer resultat;
 
     public Calcul(Op operation, int operande) {
         this.operation = operation;
         this.operande = operande;
-        result = null;
+        resultat = null;
     }
 
-    public void setResult(int result){
-        this.result = result;
+    public void setResultat(int resultat){
+        this.resultat = resultat;
     }
 
     public int getOperande() {
         return operande;
     }
 
-    public Integer getResult() {
-        return result;
+    public Integer getResultat() {
+        return resultat;
     }
 
     public Op getOperation() {
@@ -37,7 +40,7 @@ public class Calcul implements Serializable {
         return "Calcul{" +
                 "operation=" + operation +
                 ", operande=" + operande +
-                ", result=" + result +
+                ", resultat=" + resultat +
                 '}';
     }
 }
