@@ -42,7 +42,7 @@ ex : ssh identifiant@L4712-01.info.polymtl.ca
 
 3. Se rendre dans le dossier source du code sur une machine et compiler avec la commande :
 ant
-Si la même session est utilisée pour toutes les connexion ssh, nul besoin de le faire ^pour toutes les machines. Si ce n'est pas la cas, alors le faire sur toutes les machines utilisées.
+Si la même session est utilisée pour toutes les connexion ssh, nul besoin de le faire pour toutes les machines. Si ce n'est pas la cas, alors le faire sur toutes les machines utilisées.
 
 4. Lancer le serveur de nom sur une machine avec:
 ./serveurDeNom.sh <IpPubliqueServeurDeNom> <PortD'écoute>
