@@ -1,0 +1,69 @@
+Mode sécurisé
+
+2 serveurs : 
+C1 = 4, C2 = 4
+10589
+10484
+10254
+11057
+10156
+10933
+10424
+10529
+11281
+10814
+
+3 serveurs : 
+C1 = 4, C2 = 4, C3 = 4
+7023
+6919
+6827
+6888
+6804
+7832
+6831
+6854
+7878
+7180
+7078
+
+4 serveurs : 
+C1 = 4, C2 = 4, C3 = 4,  C4 = 4
+5635
+5750
+5104
+5070
+5125
+5230
+5245
+5195
+5567
+5195
+
+
+Mode non sécurisé :
+C=5
+Trois serveurs serveurs de bonne foi
+35155
+45672
+47758
+46607
+47472
+
+Un serveur malicieux 50% du temps, deux autres serveurs de bonne foi
+63499
+56440
+62961
+64117
+64652
+
+Un serveur malicieux 75% du temps, deux autres serveurs de bonne foi. 
+74507
+72508
+62760
+65863
+73480
+72008
+
+
+

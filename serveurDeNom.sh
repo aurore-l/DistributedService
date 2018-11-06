@@ -2,5 +2,5 @@
 
 basepath=$(pwd)
 
-java -cp "$basepath"/authserver.jar:"$basepath"/shared.jar -Djava.security.policy="$basepath"/policy polymtl.TP1.AuthServer.AuthServer
+java -cp "$basepath"/serveurDeNom.jar:"$basepath"/shared.jar -Djava.rmi.server.hostname=$1 -Djava.security.policy="$basepath"/policy ServeurDeNom.ServeurDeNom $2
 

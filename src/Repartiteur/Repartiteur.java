@@ -19,7 +19,7 @@ public class Repartiteur implements RepartiteurInterface {
     private String fichier;
     private LinkedBlockingQueue<Calcul> listeDeCalcul;
     private List<Calcul> listeResultatCalcul;
-    private final double FACTOR_OF_CALCUL_IN_TACHE = 1.8;
+    private final double FACTOR_OF_CALCUL_IN_TACHE = 1.35;
     private boolean modeSecurise = false;
 
 
@@ -93,7 +93,7 @@ public class Repartiteur implements RepartiteurInterface {
         String port = hostname.split(":")[1];
 
         try {
-            Registry registry = LocateRegistry.getRegistry(hostname, Integer.parseInt(port));
+            Registry registry = LocateRegistry.getRegistry(ip, Integer.parseInt(port));
             stub = (ServeurDeCalculInterface) registry.lookup(name);
         } catch (NotBoundException e) {
             System.out.println("Erreur: Le nom '" + e.getMessage()
@@ -135,6 +135,7 @@ public class Repartiteur implements RepartiteurInterface {
                 e.printStackTrace();
             }
         }
+        System.exit(0);
     }
 
     private void calculRepartiModeSecurise() {

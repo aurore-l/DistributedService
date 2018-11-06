@@ -2,5 +2,5 @@
 
 basepath=$(pwd)
 
-java -cp "$basepath"/fileserver.jar:"$basepath"/shared.jar -Djava.security.policy="$basepath"/policy polymtl.TP1.FileServer.FileServer
+java -cp "$basepath"/serveurDeCalcul.jar:"$basepath"/shared.jar -Djava.rmi.server.hostname=$1 -Djava.security.policy="$basepath"/policy ServeurDeCalcul.ServeurDeCalcul $2 $3 $4 $5 $6 $7
 

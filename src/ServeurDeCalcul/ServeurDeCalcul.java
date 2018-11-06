@@ -59,11 +59,8 @@ public class ServeurDeCalcul implements ServeurDeCalculInterface {
 
 
             try {
-                InetAddress inetAddress = InetAddress.getLocalHost();
-                String ip = inetAddress.getHostAddress();
+                String ip = System.getProperty("java.rmi.server.hostname");
                 serveurDeNomInterface.initiationServeurDeCalcul(ip+":"+port,name);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
